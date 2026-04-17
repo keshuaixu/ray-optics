@@ -26,13 +26,13 @@ const SAFE_TOP_LEVEL_KEYWORDS = new Set([
   'ENVD', 'GFAC', 'GCAT', 'SDMA', 'OMMA', 'FTYP', 'ROPD', 'HYPR', 'PICB',
   'XFLN', 'YFLN', 'FWGN', 'WAVM', 'PWAV', 'GLRS', 'RAIM', 'PUSH', 'VDXN',
   'VDYN', 'VCXN', 'VCYN', 'VANN', 'POLS', 'GSTD', 'NSCD', 'COFN', 'BLNK',
-  'RCMF', 'TOL', 'MNUM', 'MOFF'
+  'RCMF', 'TOL', 'MNUM', 'MOFF', 'AUTH', 'LUID', 'XAIM', 'YAIM', 'ZAIM'
 ]);
 
 const SAFE_SURFACE_KEYWORDS = new Set([
   'COMM', 'STOP', 'TYPE', 'FIMP', 'CURV', 'COAT', 'HIDE', 'MIRR', 'SLAB',
   'PARM', 'DISZ', 'GLAS', 'CONI', 'DIAM', 'OEMA', 'MEMA', 'CLAP', 'FLAP',
-  'MAZH', 'POPS'
+  'MAZH', 'POPS', 'SSID'
 ]);
 
 const SUPPORTED_SURFACE_TYPES = new Set([
@@ -404,6 +404,7 @@ export function parseZemaxText(text) {
         case 'MIRR':
         case 'SLAB':
         case 'POPS':
+        case 'SSID':
           ignoredSurfaceMetadata.add(keyword);
           break;
         case 'FIMP':

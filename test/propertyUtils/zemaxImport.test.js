@@ -138,6 +138,22 @@ describe('zemaxImport', () => {
     expect(converted.warnings.some((warningText) => warningText.includes('blocked cylindrical rim'))).toBe(true);
   });
 
+  it('imports the extracted zmax_16979 file with SSID metadata', () => {
+    const sampleBuffer = fs.readFileSync(path.resolve(process.cwd(), 'zmx/zmax_16979.zmx'));
+    const parsed = parseZemaxText(decodeZemaxBuffer(sampleBuffer));
+    const converted = convertParsedZemaxToModule(parsed);
+
+    expect(parsed.mode).toBe('SEQ');
+    expect(parsed.surfaces[1].type).toBe('EVENASPH');
+    expect(parsed.surfaces[1].glassName).toBe('N-BK7');
+    expect(parsed.surfaces[2].vertexX).toBe(11.5);
+    expect(converted.moduleDef.objs).toHaveLength(1);
+    expect(converted.moduleDef.objs[0].type).toBe('AsphericGlass');
+    expect(converted.metadataSummary.glassNames).toEqual(['N-BK7']);
+    expect(converted.metadataSummary.totalLength).toBe(11.5);
+    expect(converted.warnings.some((warningText) => warningText.includes('Unsupported Zemax surface record "SSID"'))).toBe(false);
+  });
+
   it('uses bundled glass defaults for SCHOTT N-LAK22 and N-SF6 instead of fallback material values', () => {
     const sampleBuffer = fs.readFileSync(path.resolve(process.cwd(), 'zmx/zmax_45803.zmx'));
     const parsed = parseZemaxText(decodeZemaxBuffer(sampleBuffer));
