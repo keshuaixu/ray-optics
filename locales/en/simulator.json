@@ -211,6 +211,11 @@
     "Beam": {
       "imageDetectionWarning": "Image detection may not work with divergent/random beams."
     },
+    "MultiModeFiber": {
+      "coreDiameter": "Core diameter",
+      "na": "NA",
+      "pointSources": "Number of point sources"
+    },
     "AngleSource": {
       "symmetric": "Symmetric"
     },

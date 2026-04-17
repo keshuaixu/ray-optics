@@ -36,6 +36,20 @@
       :layout="layout"
     />
     <ToolItem
+      id="MultiModeFiber"
+      :title="$t('main:tools.MultiModeFiber.title')"
+      :popoverContent="$t('main:meta.parentheses', {main: $t('main:tools.MultiModeFiber.description'), sub: $t('main:tools.SingleRay.instruction')})"
+      popoverImage="Beam.svg"
+      :layout="layout"
+    />
+    <ToolItem
+      id="MultiModeFiberRandom"
+      :title="$t('main:tools.MultiModeFiberRandom.title')"
+      :popoverContent="$t('main:meta.parentheses', {main: $t('main:tools.MultiModeFiberRandom.description'), sub: $t('main:tools.SingleRay.instruction')})"
+      popoverImage="Beam.svg"
+      :layout="layout"
+    />
+    <ToolItem
       id="PointSource"
       :title="$t('main:tools.PointSource.title') + ' (360°)'"
       :popoverContent="$t('main:meta.parentheses', {main: $t('main:tools.PointSource.description'), sub: $t('main:tools.common.clickInstruction')})"

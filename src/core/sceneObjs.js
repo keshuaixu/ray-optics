@@ -28,6 +28,8 @@
  */
 export const SingleRay = require('./sceneObjs/lightSource/SingleRay.js').default;
 export const Beam = require('./sceneObjs/lightSource/Beam.js').default;
+export const MultiModeFiber = require('./sceneObjs/lightSource/MultiModeFiber.js').default;
+export const MultiModeFiberRandom = require('./sceneObjs/lightSource/MultiModeFiberRandom.js').default;
 export const PointSource = require('./sceneObjs/lightSource/PointSource.js').default;
 export const AngleSource = require('./sceneObjs/lightSource/AngleSource.js').default;
 export const Mirror = require('./sceneObjs/mirror/Mirror.js').default;
