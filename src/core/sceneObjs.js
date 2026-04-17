@@ -41,6 +41,7 @@ export const BeamSplitter = require('./sceneObjs/mirror/BeamSplitter.js').defaul
 export const PlaneGlass = require('./sceneObjs/glass/PlaneGlass.js').default;
 export const CircleGlass = require('./sceneObjs/glass/CircleGlass.js').default;
 export const Glass = require('./sceneObjs/glass/Glass.js').default;
+export const AsphericGlass = require('./sceneObjs/glass/AsphericGlass.js').default;
 export const CustomGlass = require('./sceneObjs/glass/CustomGlass.js').default;
 export const ParamGlass = require('./sceneObjs/glass/ParamGlass.js').default;
 export const CurveGlass = require('./sceneObjs/glass/CurveGlass.js').default;

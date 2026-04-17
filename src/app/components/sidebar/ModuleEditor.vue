@@ -1077,7 +1077,7 @@ export default {
       const refs = scene?.getModuleObjRefsById?.(props.moduleName) || []
       const prevCount = mod.numPoints ?? 0
       const isFirst = prevCount === 0
-      const gridSize = scene?.gridSize ?? 20
+      const gridSize = scene?.gridSize ?? 1
       mod.numPoints = prevCount + 1
       for (const ref of refs) {
         ensureModuleObjPointsArray(ref)
@@ -1843,5 +1843,4 @@ export default {
   border-color: rgba(120, 198, 255, 0.6);
 }
 </style>
-
 

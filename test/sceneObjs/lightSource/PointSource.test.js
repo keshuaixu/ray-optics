@@ -25,6 +25,7 @@ describe('PointSource', () => {
 
   beforeEach(() => {
     scene = new Scene();
+    scene.gridSize = 20;
     obj = new PointSource(scene);
     user = new MockUser(obj);
   });

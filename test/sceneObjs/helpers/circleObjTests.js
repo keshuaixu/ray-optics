@@ -47,6 +47,7 @@ export function testCircleObj(getTestContext) {
   });
 
   it('creates with grid snapping', () => {
+    user.setScene('gridSize', 20);
     user.setScene('snapToGrid', true);
     user.drag(101, 102, 203, 304);
     expect(obj.serialize()).toEqual({
@@ -102,6 +103,7 @@ export function testCircleObj(getTestContext) {
   it('drags with grid snapping', () => {
     user.click(100, 100);
     user.click(200, 300);
+    user.setScene('gridSize', 20);
     user.setScene('snapToGrid', true);
 
     user.drag(101, 101, 201, 201);

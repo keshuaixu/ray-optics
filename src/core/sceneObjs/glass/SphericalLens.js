@@ -19,6 +19,8 @@ import BaseGlass from '../BaseGlass.js';
 import geometry from '../../geometry.js';
 import i18next from 'i18next';
 
+const DEFAULT_LENS_HALF_THICKNESS = 10;
+
 /**
  * Spherical lens.
  * 
@@ -410,7 +412,10 @@ class SphericalLens extends Glass {
     var dpy = -dx;
     var cx = (p1.x + p2.x) * .5;
     var cy = (p1.y + p2.y) * .5;
-    const thick = 10 * this.scene.lengthScale;
+    // Keep the starter lens geometry in scene units rather than tying it to UI
+    // handle/text scaling. This preserves the historical default lens behavior
+    // even when `lengthScale` is reduced for display purposes.
+    const thick = DEFAULT_LENS_HALF_THICKNESS;
     // create lens
     if (!this.path) this.path = [];
     this.path[0] = { x: p1.x - dpx * thick, y: p1.y - dpy * thick, arc: false };

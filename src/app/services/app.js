@@ -968,8 +968,9 @@ function openSample(name) {
 
 function mergeModulesFromMap(moduleMap) {
   if (!moduleMap || typeof moduleMap !== 'object' || Array.isArray(moduleMap)) {
-    return;
+    return [];
   }
+  const insertedModules = [];
   for (const moduleName in moduleMap) {
     if (!Object.prototype.hasOwnProperty.call(moduleMap, moduleName)) {
       continue;
@@ -982,13 +983,31 @@ function mergeModulesFromMap(moduleMap) {
       }
     }
     scene.addModule(newModuleName, moduleMap[moduleName]);
+    insertedModules.push({
+      requestedName: moduleName,
+      finalName: newModuleName,
+    });
   }
+  return insertedModules;
 }
 
 function finalizeSuccessfulModuleImport() {
   document.dispatchEvent(new Event('sceneChanged'));
   simulator.updateSimulation(false, true);
   editor.onActionComplete();
+}
+
+function activateModulePlacement(moduleName) {
+  if (!moduleName) {
+    return false;
+  }
+  resetDropdownButtons();
+  document.getElementById('otherToolsDropdown')?.classList.add('selected');
+  document.getElementById('mobile-dropdown-trigger-other')?.classList.add('selected');
+  document.getElementById('welcome').style.display = 'none';
+  editor.addingObjType = 'ModuleObj';
+  editor.addingModuleName = moduleName;
+  return true;
 }
 
 /**
@@ -1009,7 +1028,10 @@ function importModulesFromSceneFile(parsedJson) {
   }
   document.getElementById('welcome').style.display = 'none';
   try {
-    mergeModulesFromMap(moduleMap);
+    const insertedModules = mergeModulesFromMap(moduleMap);
+    if (insertedModules.length === 0) {
+      return false;
+    }
   } catch (e) {
     error = "importModulesFromSceneFile: " + e;
     updateErrorAndWarning();
@@ -1031,7 +1053,10 @@ function importModule(name) {
     }
     try {
       const moduleJSON = JSON.parse(client.responseText);
-      mergeModulesFromMap(moduleJSON.modules);
+      const insertedModules = mergeModulesFromMap(moduleJSON.modules);
+      if (insertedModules.length === 0) {
+        return;
+      }
     } catch (e) {
       error = "importModule: " + e;
       updateErrorAndWarning();
@@ -1051,6 +1076,29 @@ function importModule(name) {
   }
 
   client.send();
+}
+
+function insertModuleLibraryRecord(record) {
+  if (!record || typeof record !== 'object' || !record.moduleName || !record.moduleDef) {
+    return false;
+  }
+  document.getElementById('welcome').style.display = 'none';
+  try {
+    const insertedModules = mergeModulesFromMap({ [record.moduleName]: record.moduleDef });
+    if (insertedModules.length === 0) {
+      return false;
+    }
+    const finalName = insertedModules[0]?.finalName;
+    finalizeSuccessfulModuleImport();
+    if (finalName) {
+      activateModulePlacement(finalName);
+    }
+  } catch (e) {
+    error = "insertModuleLibraryRecord: " + e;
+    updateErrorAndWarning();
+    return false;
+  }
+  return true;
 }
 
 function reset() {
@@ -1235,9 +1283,11 @@ export const app = {
   initAppService,
   resetDropdownButtons,
   hideWelcome,
+  activateModulePlacement,
   rename,
   save,
   syncUrl,
   setHasUnsavedChange,
+  insertModuleLibraryRecord,
   importModulesFromSceneFile,
 }

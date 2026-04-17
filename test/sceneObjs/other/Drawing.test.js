@@ -25,6 +25,7 @@ describe('Drawing', () => {
 
   beforeEach(() => {
     scene = new Scene();
+    scene.gridSize = 20;
     obj = new Drawing(scene);
     user = new MockUser(obj);
   });

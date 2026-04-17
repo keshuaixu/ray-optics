@@ -464,10 +464,39 @@
     "title": "Import Modules",
     "makeCustomModules": "Make custom modules",
     "conflict": "A different module with the same name already exists in the current scene. You may enter a new name, or leave it the same to overwrite the existing module.",
+    "tabs": {
+      "catalog": "Built-in modules",
+      "zemax": "Zemax library"
+    },
     "importFromFile": {
       "title": "Import from file",
       "description": "Import all modules contained in a scene JSON file.",
       "error": "The file does not contain valid modules."
+    },
+    "zemax": {
+      "description": "Upload <code>.zmx</code> files, keep them in a persistent browser-local library, and insert them into the scene as reusable module tools.",
+      "upload": "Upload .zmx",
+      "uploadDescription": "Import a Zemax sequential lens file into the persistent local library.",
+      "unsupported": "This browser does not provide IndexedDB, so the persistent Zemax library is unavailable.",
+      "loading": "Loading library…",
+      "empty": "No Zemax parts have been imported into this browser yet.",
+      "importError": "The Zemax file could not be imported.",
+      "loadError": "The Zemax library could not be loaded.",
+      "insert": "Insert",
+      "insertError": "The Zemax part could not be inserted into the current scene.",
+      "delete": "Delete",
+      "deleteConfirm": "Delete \"{{name}}\" from the local Zemax library?",
+      "deleteError": "The Zemax library entry could not be deleted.",
+      "details": "Details",
+      "warnings": "Warnings",
+      "notes": "Notes",
+      "surfaces": "Surfaces",
+      "stopTag": "STOP",
+      "summary": {
+        "surfaceCount": "{{count}} surfaces",
+        "regionCount": "{{count}} glass regions",
+        "warningCount": "{{count}} warnings"
+      }
     }
   },
   "colorModeModal": {

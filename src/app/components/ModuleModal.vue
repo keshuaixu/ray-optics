@@ -24,18 +24,119 @@
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <div class="modal-body module-modal-body">
-          <iframe id="moduleIframe" loading="lazy" :src="modulesUrl"></iframe>
+          <div class="module-modal-tabs">
+            <button
+              type="button"
+              class="btn btn-sm"
+              :class="activeTab === 'catalog' ? 'btn-primary' : 'btn-outline-secondary'"
+              @click="activeTab = 'catalog'"
+              v-html="$t('simulator:moduleModal.tabs.catalog')"
+            ></button>
+            <button
+              type="button"
+              class="btn btn-sm"
+              :class="activeTab === 'zemax' ? 'btn-primary' : 'btn-outline-secondary'"
+              @click="activeTab = 'zemax'"
+              v-html="$t('simulator:moduleModal.tabs.zemax')"
+            ></button>
+          </div>
+
+          <div v-if="activeTab === 'catalog'" class="module-modal-panel">
+            <iframe id="moduleIframe" loading="lazy" :src="modulesUrl"></iframe>
+          </div>
+
+          <div v-else class="module-modal-panel zemax-panel">
+            <p class="zemax-description" v-html="$t('simulator:moduleModal.zemax.description')"></p>
+
+            <div v-if="zemaxError" class="alert alert-warning zemax-alert" role="alert">
+              {{ zemaxError }}
+            </div>
+
+            <div v-if="zemaxBusy" class="zemax-empty text-muted">
+              {{ $t('simulator:moduleModal.zemax.loading') }}
+            </div>
+
+            <div v-else-if="zemaxEntries.length === 0" class="zemax-empty text-muted">
+              {{ $t('simulator:moduleModal.zemax.empty') }}
+            </div>
+
+            <div v-else class="zemax-entry-list">
+              <article v-for="entry in zemaxEntries" :key="entry.id" class="zemax-entry card">
+                <div class="card-body">
+                  <div class="zemax-entry-header">
+                    <div>
+                      <h6 class="zemax-entry-title">{{ entry.name }}</h6>
+                      <div class="small text-muted">
+                        <span v-if="entry.sourceFileName">{{ entry.sourceFileName }}</span>
+                        <span v-if="entry.sourceFileName && entry.moduleName"> · </span>
+                        <code v-if="entry.moduleName">{{ entry.moduleName }}</code>
+                      </div>
+                      <div class="small text-muted">
+                        {{ formatEntrySummary(entry) }}
+                      </div>
+                    </div>
+                    <div class="zemax-entry-actions">
+                      <button type="button" class="btn btn-sm btn-primary" @click="insertZemaxEntry(entry)">
+                        {{ $t('simulator:moduleModal.zemax.insert') }}
+                      </button>
+                      <button type="button" class="btn btn-sm btn-outline-danger" @click="removeZemaxEntry(entry)">
+                        {{ $t('simulator:moduleModal.zemax.delete') }}
+                      </button>
+                    </div>
+                  </div>
+
+                  <details class="zemax-details">
+                    <summary>{{ $t('simulator:moduleModal.zemax.details') }}</summary>
+
+                    <div v-if="entry.diagnostics?.warnings?.length" class="zemax-details-section">
+                      <div class="fw-bold">{{ $t('simulator:moduleModal.zemax.warnings') }}</div>
+                      <ul class="zemax-list">
+                        <li v-for="warningText in entry.diagnostics.warnings" :key="warningText">{{ warningText }}</li>
+                      </ul>
+                    </div>
+
+                    <div v-if="entry.metadataSummary?.notes?.length" class="zemax-details-section">
+                      <div class="fw-bold">{{ $t('simulator:moduleModal.zemax.notes') }}</div>
+                      <ul class="zemax-list">
+                        <li v-for="note in entry.metadataSummary.notes" :key="note">{{ note }}</li>
+                      </ul>
+                    </div>
+
+                    <div v-if="entry.metadataSummary?.surfaces?.length" class="zemax-details-section">
+                      <div class="fw-bold">{{ $t('simulator:moduleModal.zemax.surfaces') }}</div>
+                      <div class="zemax-surface-list">
+                        <div v-for="surface in entry.metadataSummary.surfaces" :key="surface.index" class="zemax-surface-line">
+                          {{ formatSurfaceSummary(surface) }}
+                        </div>
+                      </div>
+                    </div>
+                  </details>
+                </div>
+              </article>
+            </div>
+          </div>
         </div>
         <div class="modal-footer d-flex justify-content-between">
-          <div>
+          <div v-if="activeTab === 'catalog'">
             <button
               type="button"
               class="btn btn-outline-secondary me-2"
               v-tooltip-popover:[tooltipType]="{ content: $t('simulator:moduleModal.importFromFile.description'), placement: 'top' }"
-              @click="importFromFile"
+              @click="importFromSceneFile"
               v-html="$t('simulator:moduleModal.importFromFile.title')"
             ></button>
-            <input type="file" ref="fileInput" accept=".json" style="display: none" @change="handleFileSelect" />
+            <input type="file" ref="jsonFileInput" accept=".json" style="display: none" @change="handleJsonFileSelect" />
+          </div>
+          <div v-else>
+            <button
+              type="button"
+              class="btn btn-outline-secondary me-2"
+              v-tooltip-popover:[tooltipType]="{ content: $t('simulator:moduleModal.zemax.uploadDescription'), placement: 'top' }"
+              @click="importZemaxFile"
+            >
+              {{ $t('simulator:moduleModal.zemax.upload') }}
+            </button>
+            <input type="file" ref="zemaxFileInput" accept=".zmx" style="display: none" @change="handleZemaxFileSelect" />
           </div>
           <div>
             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" v-html="$t('simulator:common.closeButton')"></button>
@@ -58,6 +159,12 @@ import { usePreferencesStore } from '../store/preferences.js'
 import * as bootstrap from 'bootstrap'
 import i18next from 'i18next'
 import { app } from '../services/app.js'
+import {
+  deleteZemaxLibraryEntry,
+  importZemaxArrayBufferToLibrary,
+  isZemaxLibrarySupported,
+  listZemaxLibraryEntries
+} from '../services/zemaxLibrary.js'
 
 export default {
   name: 'ModuleModal',
@@ -66,20 +173,15 @@ export default {
   },
   setup() {
     const isModalOpen = ref(false)
-    const fileInput = ref(null)
+    const activeTab = ref('catalog')
+    const jsonFileInput = ref(null)
+    const zemaxFileInput = ref(null)
+    const zemaxEntries = ref([])
+    const zemaxBusy = ref(false)
+    const zemaxError = ref('')
     const preferences = usePreferencesStore()
     const help = toRef(preferences, 'help')
     const tooltipType = computed(() => (help.value ? 'popover' : null))
-
-    onMounted(() => {
-      const modal = document.getElementById('moduleModal')
-      modal.addEventListener('show.bs.modal', () => {
-        isModalOpen.value = true
-      })
-      modal.addEventListener('hide.bs.modal', () => {
-        isModalOpen.value = false
-      })
-    })
 
     const closeModal = () => {
       const modal = document.getElementById('moduleModal')
@@ -91,11 +193,41 @@ export default {
 
     const modulesUrl = mapURL('/modules/modules')
 
-    const importFromFile = () => {
-      fileInput.value.click()
+    const loadZemaxEntries = async () => {
+      if (!isZemaxLibrarySupported()) {
+        zemaxEntries.value = []
+        zemaxError.value = i18next.t('simulator:moduleModal.zemax.unsupported')
+        return
+      }
+
+      zemaxBusy.value = true
+      zemaxError.value = ''
+      try {
+        zemaxEntries.value = await listZemaxLibraryEntries()
+      } catch (err) {
+        console.error(err)
+        zemaxError.value = err?.message || i18next.t('simulator:moduleModal.zemax.loadError')
+      } finally {
+        zemaxBusy.value = false
+      }
     }
 
-    const handleFileSelect = (event) => {
+    onMounted(() => {
+      const modal = document.getElementById('moduleModal')
+      modal.addEventListener('show.bs.modal', () => {
+        isModalOpen.value = true
+        loadZemaxEntries()
+      })
+      modal.addEventListener('hide.bs.modal', () => {
+        isModalOpen.value = false
+      })
+    })
+
+    const importFromSceneFile = () => {
+      jsonFileInput.value.click()
+    }
+
+    const handleJsonFileSelect = (event) => {
       const file = event.target.files[0]
       if (!file) return
 
@@ -126,14 +258,130 @@ export default {
       event.target.value = ''
     }
 
+    const importZemaxFile = () => {
+      zemaxFileInput.value.click()
+    }
+
+    const handleZemaxFileSelect = async (event) => {
+      const file = event.target.files[0]
+      if (!file) return
+
+      zemaxBusy.value = true
+      zemaxError.value = ''
+      try {
+        await importZemaxArrayBufferToLibrary({
+          arrayBuffer: await file.arrayBuffer(),
+          fileName: file.name
+        })
+        await loadZemaxEntries()
+      } catch (err) {
+        console.error(err)
+        zemaxError.value = err?.message || i18next.t('simulator:moduleModal.zemax.importError')
+      } finally {
+        zemaxBusy.value = false
+        event.target.value = ''
+      }
+    }
+
+    const insertZemaxEntry = (entry) => {
+      zemaxError.value = ''
+      const inserted = app.insertModuleLibraryRecord(entry)
+      if (!inserted) {
+        return
+      }
+
+      const modalEl = document.getElementById('moduleModal')
+      const bsModal = bootstrap.Modal.getInstance(modalEl)
+      if (bsModal) {
+        bsModal.hide()
+      } else {
+        closeModal()
+      }
+    }
+
+    const removeZemaxEntry = async (entry) => {
+      if (!window.confirm(i18next.t('simulator:moduleModal.zemax.deleteConfirm', { name: entry.name }))) {
+        return
+      }
+
+      zemaxBusy.value = true
+      zemaxError.value = ''
+      try {
+        await deleteZemaxLibraryEntry(entry.id)
+        zemaxEntries.value = zemaxEntries.value.filter((candidate) => candidate.id !== entry.id)
+      } catch (err) {
+        console.error(err)
+        zemaxError.value = err?.message || i18next.t('simulator:moduleModal.zemax.deleteError')
+      } finally {
+        zemaxBusy.value = false
+      }
+    }
+
+    const formatEntrySummary = (entry) => {
+      const surfaceCount = entry?.metadataSummary?.surfaces?.length || 0
+      const regionCount = entry?.metadataSummary?.regionCount || 0
+      const glassNames = entry?.metadataSummary?.glassNames || []
+      const warningCount = entry?.diagnostics?.warnings?.length || 0
+      const summaryParts = [
+        i18next.t('simulator:moduleModal.zemax.summary.surfaceCount', { count: surfaceCount }),
+        i18next.t('simulator:moduleModal.zemax.summary.regionCount', { count: regionCount })
+      ]
+      if (glassNames.length > 0) {
+        summaryParts.push(glassNames.join(', '))
+      }
+      if (warningCount > 0) {
+        summaryParts.push(i18next.t('simulator:moduleModal.zemax.summary.warningCount', { count: warningCount }))
+      }
+      return summaryParts.join(' • ')
+    }
+
+    const formatSurfaceSummary = (surface) => {
+      const parts = [
+        `S${surface.index}`,
+        `TYPE ${surface.type || 'STANDARD'}`,
+        `CURV ${surface.curvature}`,
+        `THICK ${surface.thickness}`
+      ]
+      if (surface.conic != null && Math.abs(surface.conic) > 1e-12) {
+        parts.push(`CONI ${surface.conic}`)
+      }
+      if (surface.glassName) {
+        parts.push(surface.glassName)
+      }
+      if (surface.semiDiameter != null) {
+        parts.push(`SD ${surface.semiDiameter}`)
+      }
+      if (surface.clearSemiDiameter != null) {
+        parts.push(`CA ${surface.clearSemiDiameter}`)
+      }
+      if (surface.stop) {
+        parts.push(i18next.t('simulator:moduleModal.zemax.stopTag'))
+      }
+      if (surface.coat) {
+        parts.push(`COAT ${surface.coat}`)
+      }
+      return parts.join(' · ')
+    }
+
     return {
-      modulesUrl,
-      isModalOpen,
+      activeTab,
       closeModal,
-      fileInput,
+      formatEntrySummary,
+      formatSurfaceSummary,
+      handleJsonFileSelect,
+      handleZemaxFileSelect,
+      importFromSceneFile,
+      importZemaxFile,
+      insertZemaxEntry,
+      isModalOpen,
+      jsonFileInput,
+      modulesUrl,
+      removeZemaxEntry,
       tooltipType,
-      importFromFile,
-      handleFileSelect
+      zemaxBusy,
+      zemaxEntries,
+      zemaxError,
+      zemaxFileInput
     }
   }
 }
@@ -149,6 +397,75 @@ export default {
 
 .module-modal-body {
   padding: 0 !important;
+}
+
+.module-modal-tabs {
+  display: flex;
+  gap: 0.5rem;
+  padding: 1rem 1rem 0;
+}
+
+.module-modal-panel {
+  padding: 1rem;
+}
+
+.zemax-panel {
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+.zemax-description {
+  margin-bottom: 1rem;
+}
+
+.zemax-alert,
+.zemax-empty {
+  margin-bottom: 0.75rem;
+}
+
+.zemax-entry-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.zemax-entry-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.zemax-entry-title {
+  margin-bottom: 0.15rem;
+}
+
+.zemax-entry-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-shrink: 0;
+  align-items: flex-start;
+}
+
+.zemax-details {
+  margin-top: 0.75rem;
+}
+
+.zemax-details-section + .zemax-details-section {
+  margin-top: 0.75rem;
+}
+
+.zemax-list {
+  margin: 0.35rem 0 0;
+  padding-left: 1.1rem;
+}
+
+.zemax-surface-list {
+  margin-top: 0.35rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-family: monospace;
+  font-size: 0.85rem;
 }
 
 .modal-backdrop {
@@ -167,5 +484,15 @@ export default {
 
 .modal-dialog {
   z-index: 1045;
+}
+
+@media (max-width: 767px) {
+  .zemax-entry-header {
+    flex-direction: column;
+  }
+
+  .zemax-entry-actions {
+    width: 100%;
+  }
 }
 </style>

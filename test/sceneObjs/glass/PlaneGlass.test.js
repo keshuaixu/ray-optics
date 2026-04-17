@@ -26,6 +26,7 @@ describe('PlaneGlass', () => {
 
   beforeEach(() => {
     scene = new Scene();
+    scene.gridSize = 20;
     obj = new PlaneGlass(scene);
     user = new MockUser(obj);
   });

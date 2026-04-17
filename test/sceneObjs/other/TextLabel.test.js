@@ -25,6 +25,7 @@ describe('TextLabel', () => {
 
   beforeEach(() => {
     scene = new Scene();
+    scene.gridSize = 20;
     obj = new TextLabel(scene);
     user = new MockUser(obj);
 
