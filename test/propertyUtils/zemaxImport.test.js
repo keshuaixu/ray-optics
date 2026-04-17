@@ -104,10 +104,10 @@ describe('zemaxImport', () => {
     expect(converted.moduleDef.vars.some((expression) => expression.includes('scaleFactor'))).toBe(false);
     expect(converted.moduleDef.params).toEqual(
       expect.arrayContaining([
-        expect.stringMatching(/^n_1=/),
-        expect.stringMatching(/^B_1=/),
-        expect.stringMatching(/^n_2=/),
-        expect.stringMatching(/^B_2=/),
+        'n_1=0.5:0.01:2.5:1.6968',
+        'B_1=0.0001:0.0001:0.02:0.0066',
+        'n_2=0.5:0.01:2.5:1.92286',
+        'B_2=0.0001:0.0001:0.0231:0.0231',
       ])
     );
     expect(converted.moduleDef.objs.filter((obj) => obj.type === 'Glass')).toHaveLength(2);
@@ -136,6 +136,36 @@ describe('zemaxImport', () => {
     expect(converted.metadataSummary.totalLength).toBe(7.6);
     expect(converted.warnings.some((warningText) => warningText.includes('sampled line-segment outlines'))).toBe(false);
     expect(converted.warnings.some((warningText) => warningText.includes('blocked cylindrical rim'))).toBe(true);
+  });
+
+  it('uses bundled glass defaults for SCHOTT N-LAK22 and N-SF6 instead of fallback material values', () => {
+    const sampleBuffer = fs.readFileSync(path.resolve(process.cwd(), 'zmx/zmax_45803.zmx'));
+    const parsed = parseZemaxText(decodeZemaxBuffer(sampleBuffer));
+    const converted = convertParsedZemaxToModule(parsed);
+
+    expect(converted.metadataSummary.glassNames).toEqual(['N-LAK22', 'N-SF6']);
+    expect(converted.warnings.some((warningText) => warningText.includes('fallback refractive data'))).toBe(false);
+    expect(converted.moduleDef.params).toEqual(
+      expect.arrayContaining([
+        'n_1=0.5:0.01:2.5:1.65113',
+        'B_1=0.0001:0.0001:0.02:0.0061',
+        'n_2=0.5:0.01:2.5:1.80518',
+        'B_2=0.0001:0.0001:0.02:0.0166',
+      ])
+    );
+  });
+
+  it('supports glass names that map to the current SCHOTT N-LASF31A designation', () => {
+    expect(createZemaxLibraryRecord({
+      fileName: 'sample.zmx',
+      sourceText: SAMPLE_ZMX_TEXT.replace('GLAS N-LAK14', 'GLAS N-LASF31A'),
+      now: () => '2026-04-17T00:00:00.000Z',
+    }).moduleDef.params).toEqual(
+      expect.arrayContaining([
+        'n_1=0.5:0.01:2.5:1.883',
+        'B_1=0.0001:0.0001:0.02:0.0113',
+      ])
+    );
   });
 
   it('falls back to editable default material values for unknown glasses', () => {

@@ -63,6 +63,13 @@ function formatNumber(value) {
   return `${Number.parseFloat(value.toPrecision(15))}`;
 }
 
+function formatParamUpperBound(value, minimum) {
+  if (!Number.isFinite(value)) {
+    return formatNumber(minimum);
+  }
+  return formatNumber(Math.max(minimum, Math.ceil(value * 10000) / 10000));
+}
+
 function scaleLength(value, scale) {
   return Number.isFinite(value) ? value * scale : value;
 }
@@ -625,7 +632,7 @@ export function convertParsedZemaxToModule(parsed) {
     const refParam = `n_${regionIndex}`;
     const bParam = `B_${regionIndex}`;
     params.push(`${refParam}=0.5:0.01:2.5:${formatNumber(region.refIndex)}`);
-    params.push(`${bParam}=0.0001:0.0001:0.02:${formatNumber(region.cauchyB)}`);
+    params.push(`${bParam}=0.0001:0.0001:${formatParamUpperBound(region.cauchyB, 0.02)}:${formatNumber(region.cauchyB)}`);
     glassNames.push(region.glassName);
     maxSemiDiameter = Math.max(maxSemiDiameter, region.frontSemiDiameter, region.backSemiDiameter);
 

@@ -479,9 +479,9 @@
       "error": "The file does not contain valid modules."
     },
     "zemax": {
-      "description": "Upload <code>.zmx</code> files, keep them in a persistent browser-local library, and insert them into the scene as reusable module tools.",
+      "description": "Upload one or more <code>.zmx</code> files, keep them in a persistent browser-local library, and insert them into the scene as reusable module tools.",
       "upload": "Upload .zmx",
-      "uploadDescription": "Import a Zemax sequential lens file into the persistent local library.",
+      "uploadDescription": "Import one or more Zemax sequential lens files into the persistent local library.",
       "unsupported": "This browser does not provide IndexedDB, so the persistent Zemax library is unavailable.",
       "loading": "Loading library…",
       "empty": "No Zemax parts have been imported into this browser yet.",

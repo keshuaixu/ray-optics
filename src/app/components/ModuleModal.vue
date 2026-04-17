@@ -136,7 +136,7 @@
             >
               {{ $t('simulator:moduleModal.zemax.upload') }}
             </button>
-            <input type="file" ref="zemaxFileInput" accept=".zmx" style="display: none" @change="handleZemaxFileSelect" />
+            <input type="file" ref="zemaxFileInput" accept=".zmx" multiple style="display: none" @change="handleZemaxFileSelect" />
           </div>
           <div>
             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" v-html="$t('simulator:common.closeButton')"></button>
@@ -263,17 +263,29 @@ export default {
     }
 
     const handleZemaxFileSelect = async (event) => {
-      const file = event.target.files[0]
-      if (!file) return
+      const files = Array.from(event.target.files || [])
+      if (files.length === 0) return
 
       zemaxBusy.value = true
       zemaxError.value = ''
+      const importErrors = []
       try {
-        await importZemaxArrayBufferToLibrary({
-          arrayBuffer: await file.arrayBuffer(),
-          fileName: file.name
-        })
+        for (const file of files) {
+          try {
+            await importZemaxArrayBufferToLibrary({
+              arrayBuffer: await file.arrayBuffer(),
+              fileName: file.name
+            })
+          } catch (err) {
+            console.error(err)
+            importErrors.push(`${file.name}: ${err?.message || i18next.t('simulator:moduleModal.zemax.importError')}`)
+          }
+        }
+
         await loadZemaxEntries()
+        if (importErrors.length > 0) {
+          zemaxError.value = importErrors.join(' ')
+        }
       } catch (err) {
         console.error(err)
         zemaxError.value = err?.message || i18next.t('simulator:moduleModal.zemax.importError')
@@ -300,10 +312,6 @@ export default {
     }
 
     const removeZemaxEntry = async (entry) => {
-      if (!window.confirm(i18next.t('simulator:moduleModal.zemax.deleteConfirm', { name: entry.name }))) {
-        return
-      }
-
       zemaxBusy.value = true
       zemaxError.value = ''
       try {
